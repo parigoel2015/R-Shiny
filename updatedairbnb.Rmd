@@ -1,0 +1,165 @@
+---
+title: "R Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: column
+    vertical_layout: fill
+    theme: 
+      version: 4
+      bootswatch: journal
+---
+
+
+```{r setup, include=FALSE}
+#Installing the packages
+
+library(flexdashboard)
+library(knitr)
+library(DT)
+library(rpivotTable)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(openintro)
+library(highcharter)
+library(ggvis)
+library(leaflet)
+library(shiny)
+```
+
+
+
+```{r}
+#Loading the Dataset of AirBnb in New York
+
+datafile<-read.csv("AB_NYC_2019.csv")
+```
+
+
+
+```{r, include=FALSE}
+#Filtering the data
+
+datafile$reviews_per_month[is.na(datafile$reviews_per_month)] <- 0
+datafile <- datafile %>% mutate(avg_price = price/minimum_nights)
+```
+
+
+Column {.tabset .tabset-fade data-width=500 .colored }
+-----------------------------------------------------------------------
+
+### Location
+```{r, fig.height=7}
+#Creating a Map
+
+leaflet(datafile %>% select(longitude,neighbourhood_group,neighbourhood,latitude,price)) %>%
+  setView(lng = -73.95, lat = 40.73,zoom = 10) %>%
+   addTiles() %>% 
+  addMarkers(
+  clusterOptions = markerClusterOptions())
+```
+
+
+
+ Column {data-width=300 .colored }
+-----------------------------------------------------------------------
+### Private Room
+```{r, fig.height=3}
+rate <- nrow(datafile %>% filter(room_type == "Private room"))
+rate1= round((rate/48895)*100)
+gauge(rate1, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(50, 100), warning = c(40, 49), danger = c(0, 39)
+))
+```
+
+
+### Common Room
+```{r, fig.height=3}
+
+a <- datafile %>%
+  filter( price<300 ) %>%
+  ggplot( aes(x=price)) +
+    geom_histogram(fill="orange", alpha=0.9) +
+    ggtitle("Average Price Per Day of Common Rooms")
+
+ggplotly(a)
+```
+
+### Number of common rooms
+```{r,fig.height=0.25}
+valueBox(nrow(datafile %>% 
+                filter(avg_price < 300)), icon = "fa-building",color="orange")
+```
+
+### Average price per day of common rooms
+```{r, fig.height=0.25}
+valueBox(round(mean(datafile$avg_price[datafile$avg_price < 300]),0), icon = "fa-money",color="green")
+```
+
+
+ Column {data-width=300 .colored }
+-----------------------------------------------------------------------
+### Entire home/apt Room
+
+```{r, fig.height=3}
+rate2 <- nrow(datafile %>% filter(room_type == "Entire home/apt"))
+rate3= round((rate2/48895)*100)
+gauge(rate3, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(50, 100), warning = c(40, 49), danger = c(0, 39)
+))
+```
+
+### Premium Room
+```{r}
+p <- datafile %>%
+  filter( price>400 ) %>%
+  ggplot( aes(x=price)) +
+    geom_histogram(fill="blue", alpha=0.9) +
+    ggtitle("Average Price Per Day of Premium Rooms")
+ggplotly(p)
+    
+```
+
+### Number of premium room
+```{r, fig.height=0.25}
+valueBox(nrow(datafile %>% 
+                filter(avg_price >= 300)), icon = "fa-building",color="blue")
+```
+
+### Average price per day of premium rooms
+```{r, fig.height=0.25}
+valueBox(round(mean(datafile$avg_price[datafile$avg_price >= 300]),0), icon = "fa-money",color="green")
+```
+ 
+ 
+ 
+ Column {data-width=300 .colored }
+-----------------------------------------------------------------------
+### Shared room
+```{r, fig.height=3}
+rate4 <- nrow(datafile %>% filter(room_type == "Shared room"))
+rate5= round((rate4/48895)*100)
+gauge(rate5, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(50, 100), warning = c(40, 49), danger = c(0, 39)
+))
+```
+
+### Availability
+```{r,fig.height=3}
+p <- datafile %>%
+    ggplot( aes(x=datafile$availability_365)) +
+    geom_histogram(fill="red", alpha=0.9) +
+    ggtitle("Number of Rooms Available")
+ggplotly(p)
+
+```
+
+### Number of hotel
+```{r, fig.height=0.25}
+valueBox(nrow(datafile), icon = "fa-building", color="red")
+```
+
+### Average price per day
+```{r, fig.height=0.25}
+valueBox(round(mean(datafile$price, na.rm = T),0), icon = "fa-money", color="green")
+```
